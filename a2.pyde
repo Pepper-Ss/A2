@@ -1,195 +1,211 @@
-
 import random
-
-# =========================
-# GAME SETTINGS
-# =========================
 
 ROWS = 5
 COLS = 5
-
 CELL_SIZE = 65
-CELL_GAP = 5
-
 OFFSET_X = 37
 OFFSET_Y = 100
 
-WINDOW_WIDTH = 400
-WINDOW_HEIGHT = 480
+def create_grid():
+    grid = []
+
+    r = 0
+    while r < ROWS:
+        row = []
+
+        c = 0
+        while c < COLS:
+            row.append(0)
+            c += 1
+
+        grid.append(row)
+        r += 1
+
+    return grid
 
 
-# =========================
-# GAME VARIABLES
-# =========================
-
-grid = [[0 for _ in range(COLS)] for _ in range(ROWS)]
-
+grid = create_grid()
 moves = 0
 game_over = False
 
 
-# =========================
-# SETUP
-# =========================
-
 def setup():
-    size(WINDOW_WIDTH, WINDOW_HEIGHT)
+    size(400, 480)
     reset_game()
 
-
-# =========================
-# RESET GAME
-# =========================
 
 def reset_game():
     global grid, moves, game_over
 
-    grid = [[0 for _ in range(COLS)] for _ in range(ROWS)]
-
+    grid = create_grid()
     moves = 0
     game_over = False
 
-    # Create a random puzzle
-    for _ in range(12):
-        r = random.randint(0, ROWS - 1)
-        c = random.randint(0, COLS - 1)
+    # สร้างปริศนาแบบสุ่ม
+    count = 0
 
-        toggle_cell(r, c)
+    while count < 12:
+        row = random.randint(0, ROWS - 1)
+        col = random.randint(0, COLS - 1)
+
+        toggle(row, col)
+
+        count += 1
 
 
-# =========================
-# TOGGLE CELL
-# =========================
+def toggle(r, c):
 
-def toggle_cell(r, c):
-
-    targets = [
-        (r, c),
-        (r - 1, c),
-        (r + 1, c),
-        (r, c - 1),
-        (r, c + 1)
+    # ตำแหน่งที่ต้องเปลี่ยน
+    directions = [
+        (0, 0),
+        (-1, 0),
+        (1, 0),
+        (0, -1),
+        (0, 1)
     ]
 
-    for row, col in targets:
+    i = 0
 
-        if 0 <= row < ROWS and 0 <= col < COLS:
-            grid[row][col] = 1 - grid[row][col]
+    while i < len(directions):
 
+        nr = r + directions[i][0]
+        nc = c + directions[i][1]
 
-# =========================
-# CHECK WIN
-# =========================
+        if nr >= 0 and nr < ROWS and nc >= 0 and nc < COLS:
+            grid[nr][nc] = 1 - grid[nr][nc]
+
+        i += 1
+
 
 def check_win():
 
     for r in range(ROWS):
         for c in range(COLS):
 
-            if grid[r][c] == 1:
+            if grid[r][c] != 0:
                 return False
 
     return True
 
 
-# =========================
-# DRAW
-# =========================
+def save_game():
+
+    try:
+        file = open("savegame.txt", "w")
+
+        file.write(str(moves) + "\n")
+        file.write(str(int(game_over)) + "\n")
+
+        for r in range(ROWS):
+
+            line = ""
+
+            for c in range(COLS):
+                line += str(grid[r][c])
+
+                if c != COLS - 1:
+                    line += " "
+
+            file.write(line + "\n")
+
+        file.close()
+
+        print("Game saved!")
+
+    except:
+        print("Unable to save game.")
+
+
+def load_game():
+
+    global grid, moves, game_over
+
+    try:
+        file = open("savegame.txt", "r")
+        lines = file.readlines()
+        file.close()
+
+        moves = int(lines[0].strip())
+        game_over = int(lines[1].strip()) == 1
+
+        new_grid = []
+
+        for r in range(ROWS):
+
+            numbers = lines[r + 2].split()
+            row = []
+
+            for c in range(COLS):
+                row.append(int(numbers[c]))
+
+            new_grid.append(row)
+
+        grid = new_grid
+
+        print("Game loaded!")
+
+    except:
+        print("Unable to load game.")
+
 
 def draw():
 
     background(15, 23, 42)
 
-    draw_title()
-    draw_grid()
-
-    if game_over:
-        draw_win_screen()
-
-
-# =========================
-# TITLE
-# =========================
-
-def draw_title():
-
     fill(255)
     textAlign(CENTER, CENTER)
 
     textSize(24)
-    text("LIGHTS OUT", width / 2, 35)
+    text("LIGHTS OUT", width / 2, 25)
 
-    textSize(16)
-    fill(148, 163, 184)
+    textSize(13)
+    fill(180)
+    text("Moves: " + str(moves), width / 2, 52)
+    text("[R] Reset  [S] Save  [L] Load", width / 2, 70)
 
-    text("Moves: " + str(moves), width / 2, 70)
+    # วาดตาราง
+    r = 0
 
+    while r < ROWS:
 
-# =========================
-# DRAW GRID
-# =========================
+        c = 0
 
-def draw_grid():
+        while c < COLS:
 
-    for r in range(ROWS):
-        for c in range(COLS):
+            x = OFFSET_X + c * (CELL_SIZE + 5)
+            y = OFFSET_Y + r * (CELL_SIZE + 5)
 
-            draw_cell(r, c)
+            if grid[r][c] == 1:
+                fill(250, 204, 21)
+            else:
+                fill(30, 41, 59)
 
+            stroke(100)
+            strokeWeight(2)
 
-# =========================
-# DRAW ONE CELL
-# =========================
+            rect(x, y, CELL_SIZE, CELL_SIZE, 8)
 
-def draw_cell(r, c):
+            c += 1
 
-    x = OFFSET_X + c * (CELL_SIZE + CELL_GAP)
-    y = OFFSET_Y + r * (CELL_SIZE + CELL_GAP)
+        r += 1
 
-    strokeWeight(2)
+    if game_over:
 
-    if grid[r][c] == 1:
-        fill(250, 204, 21)
-        stroke(234, 179, 8)
+        fill(0, 0, 0, 210)
+        rect(0, 0, width, height)
 
-    else:
-        fill(30, 41, 59)
-        stroke(51, 65, 85)
+        fill(50, 220, 100)
+        textSize(32)
+        text("YOU CLEARED IT!", width / 2, height / 2 - 20)
 
-    rect(x, y, CELL_SIZE, CELL_SIZE, 8)
+        fill(255)
+        textSize(16)
+        text("Total Moves: " + str(moves),
+             width / 2, height / 2 + 20)
 
+        text("Press R to Restart",
+             width / 2, height / 2 + 50)
 
-# =========================
-# WIN SCREEN
-# =========================
-
-def draw_win_screen():
-
-    fill(0, 0, 0, 210)
-    rect(0, 0, width, height)
-
-    textAlign(CENTER, CENTER)
-
-    fill(34, 197, 94)
-    textSize(32)
-
-    text("YOU CLEARED IT!", width / 2, height / 2 - 20)
-
-    fill(255)
-    textSize(16)
-
-    text("Total Moves: " + str(moves),
-         width / 2,
-         height / 2 + 20)
-
-    text("Press 'R' to Restart",
-         width / 2,
-         height / 2 + 50)
-
-
-# =========================
-# MOUSE CLICK
-# =========================
 
 def mousePressed():
 
@@ -198,47 +214,55 @@ def mousePressed():
     if game_over:
         return
 
-    cell = get_clicked_cell()
-
-    if cell != None:
-
-        r = cell[0]
-        c = cell[1]
-
-        toggle_cell(r, c)
-
-        moves += 1
-
-        if check_win():
-            game_over = True
-
-
-# =========================
-# FIND CLICKED CELL
-# =========================
-
-def get_clicked_cell():
-
     for r in range(ROWS):
+
         for c in range(COLS):
 
-            x = OFFSET_X + c * (CELL_SIZE + CELL_GAP)
-            y = OFFSET_Y + r * (CELL_SIZE + CELL_GAP)
+            x = OFFSET_X + c * (CELL_SIZE + 5)
+            y = OFFSET_Y + r * (CELL_SIZE + 5)
 
-            if (x <= mouseX <= x + CELL_SIZE and
-                y <= mouseY <= y + CELL_SIZE):
+            inside_x = x <= mouseX <= x + CELL_SIZE
+            inside_y = y <= mouseY <= y + CELL_SIZE
 
-                return (r, c)
+            if inside_x and inside_y:
 
-    return None
+                toggle(r, c)
+                moves += 1
 
+                if check_win():
+                    game_over = True
 
-# =========================
-# KEYBOARD
-# =========================
+                return
+
 
 def keyPressed():
 
-    if key == 'r' or key == 'R':
+    global game_over
+
+    if key in ['r', 'R']:
         reset_game()
 
+    elif key in ['s', 'S']:
+        save_game()
+
+    elif key in ['l', 'L']:
+        load_game()
+
+    elif key == '0' or key == '1':
+
+        for r in range(ROWS):
+
+            for c in range(COLS):
+
+                x = OFFSET_X + c * (CELL_SIZE + 5)
+                y = OFFSET_Y + r * (CELL_SIZE + 5)
+
+                if x <= mouseX <= x + CELL_SIZE:
+                    if y <= mouseY <= y + CELL_SIZE:
+
+                        grid[r][c] = int(key)
+
+                        if check_win():
+                            game_over = True
+
+                        return
